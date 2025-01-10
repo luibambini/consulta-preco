@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Consulta de Preços com Desconto</title>
+  <title>Consulta de Preços com Detalhes</title>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
     body {
@@ -21,7 +21,7 @@
       border-radius: 8px;
       box-shadow: 0 4px 6px rgba(0,0,0,0.1);
       width: 100%;
-      max-width: 400px;
+      max-width: 500px;
       text-align: center;
     }
     input, button {
@@ -47,18 +47,25 @@
       background-color: #f9f9f9;
       border-radius: 4px;
     }
+    .resultado p {
+      margin: 5px 0;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>Consulta de Preços com Desconto</h2>
+    <h2>Consulta de Preços com Detalhes</h2>
     <input type="text" id="codigoProduto" placeholder="Digite o código do produto">
     <button onclick="consultarProduto()">Consultar</button>
     
     <div id="resultado" class="resultado" style="display: none;">
-      <p>Valor Original: <span id="valorOriginal"></span></p>
-      <p>Valor com Desconto: <span id="valorDesconto"></span></p>
-      <p>Percentual de Desconto: <span id="percentualDesconto"></span></p>
+      <p><strong>Título:</strong> <span id="titulo"></span></p>
+      <p><strong>Valor Original:</strong> <span id="valorOriginal"></span></p>
+      <p><strong>Valor com Desconto:</strong> <span id="valorDesconto"></span></p>
+      <p><strong>Percentual de Desconto:</strong> <span id="percentualDesconto"></span></p>
+      <p><strong>Tamanho:</strong> <span id="tamanho"></span></p>
+      <p><strong>Cor:</strong> <span id="cor"></span></p>
+      <p><strong>Quantidade em Estoque:</strong> <span id="quantidade"></span></p>
     </div>
   </div>
 
@@ -83,10 +90,14 @@
           const valorDesconto = parseFloat(produto.valorComDesconto.replace(',', '.'));
           const percentualDesconto = ((valorOriginal - valorDesconto) / valorOriginal * 100).toFixed(2);
 
-          // Atualizar a interface
+          // Atualizar a interface com todos os campos
+          document.getElementById('titulo').textContent = produto.titulo;
           document.getElementById('valorOriginal').textContent = `R$ ${valorOriginal.toFixed(2).replace('.', ',')}`;
           document.getElementById('valorDesconto').textContent = `R$ ${valorDesconto.toFixed(2).replace('.', ',')}`;
           document.getElementById('percentualDesconto').textContent = `${percentualDesconto}%`;
+          document.getElementById('tamanho').textContent = produto.tamanho;
+          document.getElementById('cor').textContent = produto.cor;
+          document.getElementById('quantidade').textContent = produto.quantidade;
           resultadoDiv.style.display = 'block';
         } else {
           alert('Produto não encontrado!');
@@ -106,9 +117,13 @@
           complete: (results) => {
             console.log('Dados retornados da planilha:', results.data); // Para depuração
             resolve(results.data.map(item => ({
-              codigo: item[Object.keys(item)[0]], // Coluna 1: Código do produto
-              valorOriginal: item[Object.keys(item)[1]], // Coluna 2: Preço sem desconto
-              valorComDesconto: item[Object.keys(item)[2]] // Coluna 3: Preço com desconto
+              codigo: item[Object.keys(item)[0]], // Coluna A: Código do produto
+              valorOriginal: item[Object.keys(item)[1]], // Coluna B: Preço sem desconto
+              valorComDesconto: item[Object.keys(item)[2]], // Coluna C: Preço com desconto
+              tamanho: item[Object.keys(item)[3]], // Coluna D: Tamanho
+              cor: item[Object.keys(item)[4]], // Coluna E: Cor
+              quantidade: item[Object.keys(item)[5]], // Coluna F: Quantidade
+              titulo: item[Object.keys(item)[6]] // Coluna G: Título
             })));
           },
           error: (error) => {
