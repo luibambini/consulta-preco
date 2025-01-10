@@ -1,10 +1,11 @@
-d<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Consulta de Preços com Detalhes</title>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://unpkg.com/@zxing/library@latest"></script>
   <style>
     body {
       font-family: 'Roboto', Arial, sans-serif;
@@ -78,13 +79,22 @@ d<!DOCTYPE html>
     .resultado strong {
       color: #333333;
     }
+
+    video {
+      width: 100%;
+      max-width: 400px;
+      margin: 20px 0;
+      display: none;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>Consulta de Preços com Detalhes</h2>
-    <input type="text" id="codigoProduto" placeholder="Digite o código do produto">
+    <input type="text" id="codigoProduto" placeholder="Digite ou escaneie o código do produto">
     <button onclick="consultarProduto()">Consultar</button>
+    <button onclick="abrirCamera()">Escanear Código de Barras</button>
+    <video id="video" autoplay></video>
     
     <div id="resultado" class="resultado">
       <p><strong>Título:</strong> <span id="titulo"></span></p>
@@ -98,27 +108,23 @@ d<!DOCTYPE html>
   </div>
 
   <script>
-    // URL da planilha Google Sheets publicada no formato CSV
     const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJbY4qdDGbwGkmUEr9spCnr7RF6z3mduJlIDe6xvQ4dJFCq4OfjWXmEXRB-esA2Sn5aN1B6hi74RAY/pub?gid=0&single=true&output=csv';
+    const videoElement = document.getElementById("video");
+    const codigoInput = document.getElementById("codigoProduto");
 
     async function consultarProduto() {
-      const codigoProduto = document.getElementById('codigoProduto').value.trim();
+      const codigoProduto = codigoInput.value.trim();
       const resultadoDiv = document.getElementById('resultado');
 
       try {
-        // Buscar os dados da planilha
         const dadosProdutos = await fetchCSV(SHEET_CSV_URL);
-
-        // Encontrar o produto pelo código
         const produto = dadosProdutos.find(p => p.codigo === codigoProduto);
 
         if (produto) {
-          // Substituir vírgulas por pontos e converter os valores
           const valorOriginal = parseFloat(produto.valorOriginal.replace(',', '.'));
           const valorDesconto = parseFloat(produto.valorComDesconto.replace(',', '.'));
           const percentualDesconto = ((valorOriginal - valorDesconto) / valorOriginal * 100).toFixed(2);
 
-          // Atualizar a interface com todos os campos
           document.getElementById('titulo').textContent = produto.titulo;
           document.getElementById('valorOriginal').textContent = `R$ ${valorOriginal.toFixed(2).replace('.', ',')}`;
           document.getElementById('valorDesconto').textContent = `R$ ${valorDesconto.toFixed(2).replace('.', ',')}`;
@@ -143,22 +149,42 @@ d<!DOCTYPE html>
           download: true,
           header: true,
           complete: (results) => {
-            console.log('Dados retornados da planilha:', results.data); // Para depuração
             resolve(results.data.map(item => ({
-              codigo: item[Object.keys(item)[0]], // Coluna A: Código do produto
-              valorOriginal: item[Object.keys(item)[1]], // Coluna B: Preço sem desconto
-              valorComDesconto: item[Object.keys(item)[2]], // Coluna C: Preço com desconto
-              tamanho: item[Object.keys(item)[3]], // Coluna D: Tamanho
-              cor: item[Object.keys(item)[4]], // Coluna E: Cor
-              quantidade: item[Object.keys(item)[5]], // Coluna F: Quantidade
-              titulo: item[Object.keys(item)[6]] // Coluna G: Título
+              codigo: item[Object.keys(item)[0]],
+              valorOriginal: item[Object.keys(item)[1]],
+              valorComDesconto: item[Object.keys(item)[2]],
+              tamanho: item[Object.keys(item)[3]],
+              cor: item[Object.keys(item)[4]],
+              quantidade: item[Object.keys(item)[5]],
+              titulo: item[Object.keys(item)[6]]
             })));
           },
-          error: (error) => {
-            reject(error);
-          }
+          error: reject
         });
       });
+    }
+
+    async function abrirCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        videoElement.style.display = "block";
+        videoElement.srcObject = stream;
+
+        const codeReader = new ZXing.BrowserBarcodeReader();
+        codeReader.decodeFromVideoDevice(null, videoElement, (result, err) => {
+          if (result) {
+            codigoInput.value = result.text;
+            consultarProduto();
+            stream.getTracks().forEach(track => track.stop());
+            videoElement.style.display = "none";
+          }
+          if (err && !(err instanceof ZXing.NotFoundException)) {
+            console.error(err);
+          }
+        });
+      } catch (err) {
+        alert("Erro ao acessar a câmera: " + err.message);
+      }
     }
   </script>
 </body>
