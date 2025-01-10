@@ -104,13 +104,13 @@
       try {
         const dadosProdutos = await fetchCSV(SHEET_CSV_URL);
 
-        console.log("Dados carregados:", dadosProdutos); // Depuração: ver dados carregados
+        console.log("Dados carregados:", dadosProdutos); // Depuração: verifica os dados carregados
 
-        // Buscar o produto pelo SKU (Coluna A) ou Código de Barras (Coluna B)
+        // Buscar o produto pelo SKU ou Código de Barras
         const produto = dadosProdutos.find(p => p.sku === codigoProduto || p.codigoBarras === codigoProduto);
 
         if (produto) {
-          console.log("Produto encontrado:", produto); // Depuração: ver produto encontrado
+          console.log("Produto encontrado:", produto); // Depuração: verifica o produto encontrado
           const valorOriginal = parseFloat(produto.valorOriginal.replace(',', '.'));
           const valorDesconto = parseFloat(produto.valorComDesconto.replace(',', '.'));
           const percentualDesconto = ((valorOriginal - valorDesconto) / valorOriginal * 100).toFixed(2);
@@ -124,7 +124,7 @@
           document.getElementById('quantidade').textContent = produto.quantidade;
           resultadoDiv.style.display = 'block';
         } else {
-          console.warn("Produto não encontrado com:", codigoProduto); // Depuração: mensagem quando não encontra
+          console.warn("Produto não encontrado com o código:", codigoProduto); // Depuração
           alert('Produto não encontrado!');
           resultadoDiv.style.display = 'none';
         }
@@ -141,8 +141,8 @@
           header: true,
           complete: (results) => {
             resolve(results.data.map(item => ({
-              sku: item['SKU'], // Coluna para SKU (Coluna A)
-              codigoBarras: item['Código de Barras'], // Coluna para Código de Barras (Coluna B)
+              sku: item['SKU'], // Nome da coluna SKU
+              codigoBarras: item['Código de Barras'], // Nome da coluna Código de Barras
               valorOriginal: item['Valor Original'],
               valorComDesconto: item['Valor com Desconto'],
               tamanho: item['Tamanho'],
