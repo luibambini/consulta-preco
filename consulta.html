@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Consulta de Preços com Desconto</title>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-color: #f4f4f4;
+      margin: 0;
+    }
+    .container {
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    button {
+      background-color: #28a745;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #218838;
+    }
+    .resultado {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #f9f9f9;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Consulta de Preços com Desconto</h2>
+    <input type="text" id="codigoProduto" placeholder="Digite o código do produto">
+    <button onclick="consultarProduto()">Consultar</button>
+    
+    <div id="resultado" class="resultado" style="display: none;">
+      <p>Valor Original: <span id="valorOriginal"></span></p>
+      <p>Valor com Desconto: <span id="valorDesconto"></span></p>
+      <p>Percentual de Desconto: <span id="percentualDesconto"></span></p>
+    </div>
+  </div>
+
+  <script>
+    // URL da planilha Google Sheets publicada no formato CSV
+    const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJbY4qdDGbwGkmUEr9spCnr7RF6z3mduJlIDe6xvQ4dJFCq4OfjWXmEXRB-esA2Sn5aN1B6hi74RAY/pub?gid=0&single=true&output=csv';
+
+    // Função para consultar o produto
+    async function consultarProduto() {
+      const codigoProduto = document.getElementById('codigoProduto').value.trim();
+      const resultadoDiv = document.getElementById('resultado');
+
+      try {
+        // Buscar os dados da planilha
+        const dadosProdutos = await fetchCSV(SHEET_CSV_URL);
+
+        // Encontrar o produto pelo código
+        const produto = dadosProdutos.find(p => p.codigo === codigoProduto);
+
+        if (produto) {
+          // Calcular e exibir os resultados
+          const valorOriginal = parseFloat(produto.valorOriginal);
+          const valorDesconto = parseFloat(produto.valorComDesconto);
+          const percentualDesconto = ((valorOriginal - valorDesconto) / valorOriginal * 100).toFixed(2);
+
+          document.getElementById('valorOriginal').textContent = `R$ ${valorOriginal.toFixed(2)}`;
+          document.getElementById('valorDesconto').textContent = `R$ ${valorDesconto.toFixed(2)}`;
+          document.getElementById('percentualDesconto').textContent = `${percentualDesconto}%`;
+          resultadoDiv.style.display = 'block';
+        } else {
+          alert('Produto não encontrado!');
+          resultadoDiv.style.display = 'none';
+        }
+      } catch (error) {
+        console.error('Erro na consulta:', error);
+        alert('Erro ao consultar produto');
+      }
+    }
+
+    // Função para buscar e processar os dados do CSV
+    async function fetchCSV(url) {
+      return new Promise((resolve, reject) => {
+        Papa.parse(url, {
+          download: true,
+          header: true,
+          complete: (results) => {
+            console.log('Dados retornados da planilha:', results.data); // Para depuração
+            resolve(results.data.map(item => ({
+              codigo: item['A'], // Coluna A: Código do produto
+              valorOriginal: item['B'], // Coluna B: Preço sem desconto
+              valorComDesconto: item['C'] // Coluna C: Preço com desconto
+            })));
+          },
+          error: (error) => {
+            reject(error);
+          }
+        });
+      });
+    }
+  </script>
+</body>
+</html>
