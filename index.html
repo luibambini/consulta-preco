@@ -66,7 +66,6 @@
     // URL da planilha Google Sheets publicada no formato CSV
     const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJbY4qdDGbwGkmUEr9spCnr7RF6z3mduJlIDe6xvQ4dJFCq4OfjWXmEXRB-esA2Sn5aN1B6hi74RAY/pub?gid=0&single=true&output=csv';
 
-    // Função para consultar o produto
     async function consultarProduto() {
       const codigoProduto = document.getElementById('codigoProduto').value.trim();
       const resultadoDiv = document.getElementById('resultado');
@@ -79,13 +78,14 @@
         const produto = dadosProdutos.find(p => p.codigo === codigoProduto);
 
         if (produto) {
-          // Calcular e exibir os resultados
-          const valorOriginal = parseFloat(produto.valorOriginal);
-          const valorDesconto = parseFloat(produto.valorComDesconto);
+          // Substituir vírgulas por pontos e converter os valores
+          const valorOriginal = parseFloat(produto.valorOriginal.replace(',', '.'));
+          const valorDesconto = parseFloat(produto.valorComDesconto.replace(',', '.'));
           const percentualDesconto = ((valorOriginal - valorDesconto) / valorOriginal * 100).toFixed(2);
 
-          document.getElementById('valorOriginal').textContent = `R$ ${valorOriginal.toFixed(2)}`;
-          document.getElementById('valorDesconto').textContent = `R$ ${valorDesconto.toFixed(2)}`;
+          // Atualizar a interface
+          document.getElementById('valorOriginal').textContent = `R$ ${valorOriginal.toFixed(2).replace('.', ',')}`;
+          document.getElementById('valorDesconto').textContent = `R$ ${valorDesconto.toFixed(2).replace('.', ',')}`;
           document.getElementById('percentualDesconto').textContent = `${percentualDesconto}%`;
           resultadoDiv.style.display = 'block';
         } else {
@@ -98,7 +98,6 @@
       }
     }
 
-    // Função para buscar e processar os dados do CSV
     async function fetchCSV(url) {
       return new Promise((resolve, reject) => {
         Papa.parse(url, {
@@ -107,9 +106,9 @@
           complete: (results) => {
             console.log('Dados retornados da planilha:', results.data); // Para depuração
             resolve(results.data.map(item => ({
-              codigo: item['A'], // Coluna A: Código do produto
-              valorOriginal: item['B'], // Coluna B: Preço sem desconto
-              valorComDesconto: item['C'] // Coluna C: Preço com desconto
+              codigo: item[Object.keys(item)[0]], // Coluna 1: Código do produto
+              valorOriginal: item[Object.keys(item)[1]], // Coluna 2: Preço sem desconto
+              valorComDesconto: item[Object.keys(item)[2]] // Coluna 3: Preço com desconto
             })));
           },
           error: (error) => {
