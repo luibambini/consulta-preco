@@ -80,7 +80,7 @@
 <body>
   <div class="container">
     <h2>Consulta com Código de Barras e SKU</h2>
-    <input type="text" id="codigoProduto" placeholder="Digite o SKU ou Código de Barras">
+    <input type="text" id="codigoProduto" placeholder="Digite o SKU ou Código de Barras" onkeydown="verificarEnter(event)">
     <button onclick="consultarProduto()">Consultar</button>
 
     <div id="resultado" class="resultado">
@@ -131,6 +131,12 @@
       } catch (error) {
         console.error('Erro na consulta:', error);
         alert('Erro ao consultar produto');
+      }
+    }
+
+    function verificarEnter(event) {
+      if (event.key === 'Enter') {
+        consultarProduto(); // Chama a função de consulta ao pressionar Enter
       }
     }
 
