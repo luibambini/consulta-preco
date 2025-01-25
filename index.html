@@ -33,16 +33,38 @@
       height: 100%;
     }
 
-    .overlay {
+    /* Linha horizontal */
+    .line-indicator {
       position: absolute;
-      top: 50%;
+      top: 50%; /* Centraliza horizontalmente */
       left: 0;
       width: 100%;
-      height: 30px;
-      transform: translateY(-50%);
-      border: 2px solid #4CAF50;
-      background-color: rgba(255, 255, 255, 0.3);
+      height: 2px; /* Espessura da linha */
+      background-color: red;
+      z-index: 10; /* Certifica-se de que está acima do leitor */
+    }
+
+    /* Sombreamento para guiar o usuário */
+    .overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
       pointer-events: none;
+      z-index: 5;
+    }
+
+    .overlay .clear-area {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 300px; /* Tamanho da faixa visível */
+      height: 30px; /* Altura da área de leitura */
+      background: transparent; /* Área onde o código deve estar */
+      border: 2px dashed #4CAF50; /* Borda para destacar */
     }
 
     button {
@@ -76,7 +98,10 @@
   <h2>Leitor de Código de Barras</h2>
   <div id="reader-container">
     <div id="reader"></div>
-    <div class="overlay"></div>
+    <div class="overlay">
+      <div class="clear-area"></div>
+    </div>
+    <div class="line-indicator"></div> <!-- Linha horizontal -->
   </div>
   <button id="start-btn" onclick="startScanner()">Iniciar Leitor</button>
   <button id="stop-btn" onclick="stopScanner()" disabled>Parar Leitor</button>
@@ -101,9 +126,9 @@
         .start(
           { facingMode: "environment" }, // Câmera traseira
           {
-            fps: 20, // Reduzindo a taxa de quadros para otimizar desempenho
-            qrbox: { width: 300, height: 30 }, // Faixa fina para códigos de barras
-            disableFlip: true, // Evita inverter para melhorar a performance
+            fps: 20, // FPS reduzido para balancear velocidade e precisão
+            qrbox: { width: 300, height: 30 }, // Faixa de leitura (horizontal e fina)
+            disableFlip: true, // Desabilitar flip horizontal para câmeras traseiras
           },
           (decodedText) => {
             // Quando o código for detectado
@@ -111,8 +136,7 @@
             stopScanner(); // Para o scanner automaticamente
           },
           (error) => {
-            // Mensagens de erro podem ser removidas ou tratadas
-            console.warn(`Erro na leitura: ${error}`);
+            // Tratar erros silenciosamente para evitar atrasos
           }
         )
         .then(() => {
@@ -120,7 +144,7 @@
           scannerActive = true;
           startButton.disabled = true;
           stopButton.disabled = false;
-          resultElement.textContent = "Scanner ativo. Alinhe o código na faixa verde.";
+          resultElement.textContent = "Scanner ativo. Alinhe o código na linha vermelha.";
         })
         .catch((err) => {
           console.error("Erro ao iniciar o leitor:", err);
