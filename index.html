@@ -7,190 +7,133 @@
   <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
   <style>
     /* Estilo geral */
-    body {
-      font-family: 'Roboto', Arial, sans-serif;
-      background-color: #f7f9fc;
+    body, html {
       margin: 0;
       padding: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
+      font-family: Arial, sans-serif;
+      width: 100%;
+      height: 100%;
+      overflow: hidden; /* Impede rolagem */
+      background-color: #000;
     }
 
-    h2 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    button {
-      padding: 12px 20px;
-      font-size: 16px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      margin-top: 10px;
-      width: 90%;
-      max-width: 300px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    }
-
-    button:hover {
-      background-color: #45a049;
-    }
-
-    button:disabled {
-      background-color: #ddd;
-      cursor: not-allowed;
-    }
-
-    /* Modal de tela cheia */
-    #modal {
+    #camera-container {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.9); /* Fundo escuro para foco total */
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-
-    #modal.active {
       display: flex;
-    }
-
-    #modal-content {
-      position: relative;
-      width: 90%; /* Adapta à largura do dispositivo */
-      max-width: 400px;
-      height: 300px;
-      background: white;
-      border-radius: 8px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
+      background-color: black;
     }
 
     #reader {
       width: 100%;
       height: 100%;
-      position: relative;
+      object-fit: cover; /* Ajusta o vídeo para preencher a tela */
+      position: absolute;
     }
 
-    /* Faixa de leitura */
-    .line-indicator {
+    /* Moldura de leitura */
+    .scan-area {
       position: absolute;
-      top: 50%; /* Centraliza na tela */
+      width: 300px; /* Ajusta para o tamanho desejado */
+      height: 100px; /* Altura da área de leitura */
+      border: 4px dashed #4CAF50;
+      top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 114px; /* 3 cm em pixels */
-      height: 57px; /* 1.5 cm em pixels */
-      border: 2px dashed #4CAF50;
       z-index: 10;
     }
 
-    /* Botão para fechar */
-    #close-modal {
+    /* Botão para encerrar a leitura */
+    #close-button {
       position: absolute;
-      top: 10px;
-      right: 10px;
-      background: red;
+      top: 20px;
+      left: 20px;
+      background-color: red;
       color: white;
       border: none;
-      border-radius: 50%;
-      width: 30px;
-      height: 30px;
+      border-radius: 4px;
+      padding: 10px 20px;
+      font-size: 16px;
       cursor: pointer;
+      z-index: 20;
     }
 
     #result {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      font-size: 18px;
       text-align: center;
-      font-size: 16px;
-      margin-top: 20px;
+      z-index: 15;
     }
   </style>
 </head>
 <body>
-  <h2>Leitor de Código de Barras</h2>
-  <button onclick="openScanner()">Ativar Leitor</button>
-  <p id="result"></p>
-
-  <!-- Modal de leitura -->
-  <div id="modal">
-    <div id="modal-content">
-      <div id="reader"></div>
-      <div class="line-indicator"></div> <!-- Linha de leitura -->
-      <button id="close-modal" onclick="closeScanner()">X</button>
-    </div>
+  <!-- Contêiner da câmera -->
+  <div id="camera-container">
+    <div id="reader"></div>
+    <div class="scan-area"></div> <!-- Moldura de leitura -->
+    <button id="close-button" onclick="stopScanner()">Fechar</button>
+    <p id="result">Aponte a câmera para o código de barras</p>
   </div>
 
   <script>
     let html5QrCode;
-    let scannerActive = false;
 
-    // Abrir o modal e iniciar o scanner
-    function openScanner() {
-      const modal = document.getElementById('modal');
-      const resultElement = document.getElementById('result');
+    // Iniciar o scanner
+    function startScanner() {
+      const readerElement = document.getElementById("reader");
+      const resultElement = document.getElementById("result");
 
-      modal.classList.add('active');
-      resultElement.textContent = "Aguardando leitura...";
+      // Cria a instância do leitor
+      html5QrCode = new Html5Qrcode("reader");
 
-      // Adiar o início do scanner para permitir que a câmera foque
-      setTimeout(() => {
-        if (!html5QrCode) {
-          html5QrCode = new Html5Qrcode("reader");
-        }
-
-        html5QrCode
-          .start(
-            { facingMode: "environment" }, // Usa a câmera traseira
-            {
-              fps: 15, // FPS ajustado para dispositivos móveis
-              qrbox: { width: 114, height: 57 }, // Área de leitura compacta
-              disableFlip: true, // Desabilita o espelhamento horizontal
-            },
-            (decodedText) => {
-              // Código detectado
-              resultElement.textContent = `Código detectado: ${decodedText}`;
-              closeScanner(); // Fecha o scanner automaticamente
-            },
-            (error) => {
-              // Erros ignorados para reduzir ruído
-            }
-          )
-          .then(() => {
-            scannerActive = true;
-          })
-          .catch((err) => {
-            console.error("Erro ao iniciar o leitor:", err);
-          });
-      }, 800); // Tempo para foco da câmera
+      // Configurações do leitor
+      html5QrCode
+        .start(
+          { facingMode: "environment" }, // Usa a câmera traseira
+          {
+            fps: 15, // Reduz FPS para maior precisão
+            qrbox: { width: 300, height: 100 }, // Área visível para leitura
+            disableFlip: true, // Desativa espelhamento horizontal
+          },
+          (decodedText) => {
+            // Código detectado
+            resultElement.textContent = `Código detectado: ${decodedText}`;
+            stopScanner(); // Para o scanner após a leitura
+          },
+          (error) => {
+            // Ignora erros para não sobrecarregar o console
+          }
+        )
+        .catch((err) => {
+          console.error("Erro ao iniciar o leitor:", err);
+        });
     }
 
-    // Fechar o modal e parar o scanner
-    function closeScanner() {
-      const modal = document.getElementById('modal');
-      const resultElement = document.getElementById('result');
+    // Parar o scanner
+    function stopScanner() {
+      const resultElement = document.getElementById("result");
 
-      if (html5QrCode && scannerActive) {
+      if (html5QrCode) {
         html5QrCode.stop().then(() => {
-          scannerActive = false;
-          modal.classList.remove('active');
-          resultElement.textContent = "Scanner fechado.";
+          resultElement.textContent = "Leitura encerrada.";
+          html5QrCode = null; // Limpa a instância do leitor
         });
-      } else {
-        modal.classList.remove('active');
       }
     }
+
+    // Inicia o scanner ao carregar a página
+    window.onload = () => {
+      startScanner();
+    };
   </script>
 </body>
 </html>
