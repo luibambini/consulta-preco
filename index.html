@@ -33,18 +33,7 @@
       height: 100%;
     }
 
-    /* Linha horizontal */
-    .line-indicator {
-      position: absolute;
-      top: 50%; /* Centraliza horizontalmente */
-      left: 0;
-      width: 100%;
-      height: 2px; /* Espessura da linha */
-      background-color: red;
-      z-index: 10; /* Certifica-se de que está acima do leitor */
-    }
-
-    /* Sombreamento para guiar o usuário */
+    /* Faixa de leitura compacta */
     .overlay {
       position: absolute;
       top: 0;
@@ -61,10 +50,23 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 300px; /* Tamanho da faixa visível */
-      height: 30px; /* Altura da área de leitura */
-      background: transparent; /* Área onde o código deve estar */
-      border: 2px dashed #4CAF50; /* Borda para destacar */
+      width: 114px; /* 3 cm em pixels */
+      height: 57px; /* 1.5 cm em pixels */
+      background: transparent;
+      border: 2px dashed #4CAF50;
+      z-index: 10;
+    }
+
+    /* Linha horizontal no centro da faixa */
+    .line-indicator {
+      position: absolute;
+      top: 50%; /* Centraliza horizontalmente */
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 114px; /* Igual à largura da faixa */
+      height: 2px; /* Espessura da linha */
+      background-color: red;
+      z-index: 15; /* Acima da área de leitura */
     }
 
     button {
@@ -101,7 +103,7 @@
     <div class="overlay">
       <div class="clear-area"></div>
     </div>
-    <div class="line-indicator"></div> <!-- Linha horizontal -->
+    <div class="line-indicator"></div>
   </div>
   <button id="start-btn" onclick="startScanner()">Iniciar Leitor</button>
   <button id="stop-btn" onclick="stopScanner()" disabled>Parar Leitor</button>
@@ -121,14 +123,14 @@
         html5QrCode = new Html5Qrcode("reader");
       }
 
-      // Configuração do scanner
+      // Configuração do scanner com tamanho específico
       html5QrCode
         .start(
-          { facingMode: "environment" }, // Câmera traseira
+          { facingMode: "environment" }, // Usa a câmera traseira
           {
-            fps: 20, // FPS reduzido para balancear velocidade e precisão
-            qrbox: { width: 300, height: 30 }, // Faixa de leitura (horizontal e fina)
-            disableFlip: true, // Desabilitar flip horizontal para câmeras traseiras
+            fps: 20, // FPS reduzido para balancear desempenho e precisão
+            qrbox: { width: 114, height: 57 }, // Dimensão exata: 3 cm x 1.5 cm
+            disableFlip: true, // Evita inverter a imagem para melhorar leitura
           },
           (decodedText) => {
             // Quando o código for detectado
@@ -136,7 +138,7 @@
             stopScanner(); // Para o scanner automaticamente
           },
           (error) => {
-            // Tratar erros silenciosamente para evitar atrasos
+            // Tratamento silencioso de erros para evitar atrasos
           }
         )
         .then(() => {
@@ -144,7 +146,7 @@
           scannerActive = true;
           startButton.disabled = true;
           stopButton.disabled = false;
-          resultElement.textContent = "Scanner ativo. Alinhe o código na linha vermelha.";
+          resultElement.textContent = "Scanner ativo. Alinhe o código na faixa de leitura.";
         })
         .catch((err) => {
           console.error("Erro ao iniciar o leitor:", err);
