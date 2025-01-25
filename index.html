@@ -1,151 +1,57 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Leitor de Código de Barras</title>
-  <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
-  <style>
-    body {
-      font-family: 'Roboto', Arial, sans-serif;
-      background-color: #f7f9fc;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-    }
-
-    #reader-container {
-      position: relative;
-      width: 100%;
-      max-width: 400px;
-      height: 250px;
-      overflow: hidden;
-      border: 2px solid #ddd;
-      border-radius: 8px;
-    }
-
-    #reader {
-      width: 100%;
-      height: 100%;
-    }
-
-    .overlay {
-      position: absolute;
-      top: 50%;
-      left: 0;
-      width: 100%;
-      height: 30px;
-      transform: translateY(-50%);
-      border: 2px solid #4CAF50;
-      background-color: rgba(255, 255, 255, 0.3);
-      pointer-events: none;
-    }
-
-    button {
-      padding: 10px 20px;
-      margin-top: 20px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #45a049;
-    }
-
-    #result {
-      margin-top: 20px;
-      font-weight: bold;
-      text-align: center;
-    }
-  </style>
-</head>
+  </head>
 <body>
-  <h2>Leitor de Código de Barras</h2>
   <div id="reader-container">
     <div id="reader"></div>
-    <div class="overlay"></div> <!-- Faixa para leitura -->
+    <div class="overlay"></div>
   </div>
-  <button id="start-button">Iniciar Leitor</button>
+  <button onclick="startScanner()">Iniciar Leitor</button>
   <p id="result"></p>
-
   <script>
     let html5QrCode;
-    let isScanning = false;
+    const resultElement = document.getElementById('result');
+    const readerContainer = document.getElementById('reader-container');
 
     function startScanner() {
-      const resultElement = document.getElementById('result');
-      const startButton = document.getElementById('start-button');
-
-      if (!html5QrCode) {
-        html5QrCode = new Html5Qrcode("reader");
-      }
-
-      if (isScanning) {
-        // Para o scanner se já estiver em execução
-        html5QrCode.stop().then(() => {
-          isScanning = false;
-          resultElement.textContent = "Scanner pausado.";
-          startButton.textContent = "Iniciar Leitor";
-        });
-        return;
-      }
-
-      // Configuração da câmera e início do scanner
-      html5QrCode.start(
-        { facingMode: "environment" }, // Usa câmera traseira
-        {
-          fps: 20, // Taxa de quadros elevada para leitura rápida
-          qrbox: { width: 300, height: 50 }, // Faixa fina para códigos de barras
-          disableFlip: true // Evita espelhamento, útil para câmeras frontais (não usado aqui)
-        },
-        debounce((decodedText) => {
-          // Função chamada quando um código é detectado
-          resultElement.textContent = `Código detectado: ${decodedText}`;
-          stopScanner(); // Opcional: Pausa o scanner após detectar
-        }, 1000), // Aguarda 1 segundo entre leituras
-        (errorMessage) => {
-          // Atualiza com mensagens de erro (silencioso para evitar spam)
-          resultElement.textContent = "Procurando código...";
+      const constraints = {
+        video: {
+          facingMode: "environment",
+          focusMode: "continuous"
         }
-      ).then(() => {
-        isScanning = true;
-        resultElement.textContent = "Scanner iniciado. Aponte para o código.";
-        startButton.textContent = "Parar Leitor";
-      }).catch((err) => {
-        console.error("Erro ao iniciar o leitor:", err);
-        resultElement.textContent = "Erro ao acessar a câmera.";
+      };
+
+      navigator.mediaDevices.getUserMedia(constraints)
+      .then(stream => {
+        if (!html5QrCode) {
+          html5QrCode = new Html5Qrcode("reader");
+        }
+
+        html5QrCode.start(
+          { facingMode: "environment" },
+          {
+            fps: 15,
+            qrbox: { width: 200, height: 20 },
+          },
+          (decodedText) => {
+            resultElement.textContent = `Código detectado: ${decodedText}`;
+            html5QrCode.stop();
+          },
+          (error) => {
+            console.warn(`Erro na leitura: ${error}`);
+            resultElement.textContent = "Erro na leitura";
+          }
+        ).catch((err) => {
+          console.error("Erro ao iniciar o leitor:", err);
+          resultElement.textContent = "Erro ao iniciar o leitor";
+        });
+      })
+      .catch(err => {
+        console.error("Erro ao acessar a câmera:", err);
+        resultElement.textContent = "Erro ao acessar a câmera";
       });
     }
-
-    function stopScanner() {
-      if (html5QrCode && isScanning) {
-        html5QrCode.stop().then(() => {
-          isScanning = false;
-          const startButton = document.getElementById('start-button');
-          startButton.textContent = "Iniciar Leitor";
-          document.getElementById('result').textContent = "Scanner pausado.";
-        });
-      }
-    }
-
-    // Debounce para limitar leituras repetidas
-    function debounce(func, wait) {
-      let timeout;
-      return (...args) => {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func(...args), wait);
-      };
-    }
-
-    document.getElementById('start-button').addEventListener('click', startScanner);
   </script>
 </body>
 </html>
