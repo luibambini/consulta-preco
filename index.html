@@ -6,134 +6,108 @@
   <title>Leitor de Código de Barras</title>
   <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
   <style>
-    /* Estilo geral */
-    body, html {
+    body {
+      font-family: 'Roboto', Arial, sans-serif;
+      background-color: #f7f9fc;
       margin: 0;
       padding: 0;
-      font-family: Arial, sans-serif;
-      width: 100%;
-      height: 100%;
-      overflow: hidden; /* Impede rolagem */
-      background-color: #000;
-    }
-
-    #camera-container {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      background-color: black;
+      min-height: 100vh;
+    }
+
+    #reader-container {
+      position: relative;
+      width: 100%;
+      max-width: 400px;
+      height: 300px;
+      overflow: hidden;
+      border: 2px solid #ddd;
+      border-radius: 8px;
     }
 
     #reader {
       width: 100%;
       height: 100%;
-      object-fit: cover; /* Ajusta o vídeo para preencher a tela */
-      position: absolute;
     }
 
-    /* Moldura de leitura */
-    .scan-area {
+    .overlay {
       position: absolute;
-      width: 300px; /* Ajusta para o tamanho desejado */
-      height: 100px; /* Altura da área de leitura */
-      border: 4px dashed #4CAF50;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      z-index: 10;
+      width: 90%;
+      height: 40px; /* Altura da faixa */
+      border: 2px solid #4CAF50;
+      border-radius: 4px;
+      background-color: rgba(255, 255, 255, 0.3);
+      pointer-events: none;
     }
 
-    /* Botão para encerrar a leitura */
-    #close-button {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      background-color: red;
+    button {
+      padding: 12px 24px;
+      margin-top: 20px;
+      background-color: #4CAF50;
       color: white;
       border: none;
-      border-radius: 4px;
-      padding: 10px 20px;
+      border-radius: 6px;
       font-size: 16px;
       cursor: pointer;
-      z-index: 20;
+    }
+
+    button:hover {
+      background-color: #45a049;
     }
 
     #result {
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      color: white;
+      margin-top: 20px;
+      font-weight: bold;
       font-size: 18px;
-      text-align: center;
-      z-index: 15;
     }
   </style>
 </head>
 <body>
-  <!-- Contêiner da câmera -->
-  <div id="camera-container">
+  <h2>Leitor de Código de Barras</h2>
+  <div id="reader-container">
     <div id="reader"></div>
-    <div class="scan-area"></div> <!-- Moldura de leitura -->
-    <button id="close-button" onclick="stopScanner()">Fechar</button>
-    <p id="result">Aponte a câmera para o código de barras</p>
+    <div class="overlay"></div> <!-- Faixa para leitura -->
   </div>
+  <button onclick="startScanner()">Iniciar Leitor</button>
+  <p id="result"></p>
 
   <script>
     let html5QrCode;
 
-    // Iniciar o scanner
-    function startScanner() {
-      const readerElement = document.getElementById("reader");
-      const resultElement = document.getElementById("result");
+    async function startScanner() {
+      const resultElement = document.getElementById('result');
+      resultElement.textContent = "Posicione o código de barras na faixa verde.";
 
-      // Cria a instância do leitor
-      html5QrCode = new Html5Qrcode("reader");
+      if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode("reader");
+      }
 
-      // Configurações do leitor
-      html5QrCode
-        .start(
-          { facingMode: "environment" }, // Usa a câmera traseira
+      try {
+        await html5QrCode.start(
+          { facingMode: { exact: "environment" } }, // Garante a câmera traseira
           {
-            fps: 15, // Reduz FPS para maior precisão
-            qrbox: { width: 300, height: 100 }, // Área visível para leitura
-            disableFlip: true, // Desativa espelhamento horizontal
+            fps: 15, // Boa taxa de quadros para Safari
+            qrbox: { width: 300, height: 40 }, // Faixa de leitura
           },
           (decodedText) => {
-            // Código detectado
             resultElement.textContent = `Código detectado: ${decodedText}`;
-            stopScanner(); // Para o scanner após a leitura
+            html5QrCode.stop(); // Para o leitor após detectar o código
           },
           (error) => {
-            // Ignora erros para não sobrecarregar o console
+            console.warn("Erro na leitura:", error);
           }
-        )
-        .catch((err) => {
-          console.error("Erro ao iniciar o leitor:", err);
-        });
-    }
-
-    // Parar o scanner
-    function stopScanner() {
-      const resultElement = document.getElementById("result");
-
-      if (html5QrCode) {
-        html5QrCode.stop().then(() => {
-          resultElement.textContent = "Leitura encerrada.";
-          html5QrCode = null; // Limpa a instância do leitor
-        });
+        );
+      } catch (err) {
+        console.error("Erro ao iniciar o leitor:", err);
+        resultElement.textContent = "Erro ao acessar a câmera. Verifique as permissões.";
       }
     }
-
-    // Inicia o scanner ao carregar a página
-    window.onload = () => {
-      startScanner();
-    };
   </script>
 </body>
 </html>
