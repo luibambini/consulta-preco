@@ -38,11 +38,11 @@
       top: 50%;
       left: 0;
       width: 100%;
-      height: 30px; /* Altura da faixa */
+      height: 30px;
       transform: translateY(-50%);
       border: 2px solid #4CAF50;
       background-color: rgba(255, 255, 255, 0.3);
-      pointer-events: none; /* Permite clicar na câmera sem interferência */
+      pointer-events: none;
     }
 
     button {
@@ -54,10 +54,21 @@
       border-radius: 6px;
       font-size: 16px;
       cursor: pointer;
+      transition: background-color 0.3s;
     }
 
     button:hover {
       background-color: #45a049;
+    }
+
+    button:disabled {
+      background-color: #ddd;
+      cursor: not-allowed;
+    }
+
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
     }
   </style>
 </head>
@@ -65,39 +76,71 @@
   <h2>Leitor de Código de Barras</h2>
   <div id="reader-container">
     <div id="reader"></div>
-    <div class="overlay"></div> <!-- Faixa para leitura -->
+    <div class="overlay"></div>
   </div>
-  <button onclick="startScanner()">Iniciar Leitor</button>
-  <p id="result" style="margin-top: 20px; font-weight: bold;"></p>
+  <button id="start-btn" onclick="startScanner()">Iniciar Leitor</button>
+  <button id="stop-btn" onclick="stopScanner()" disabled>Parar Leitor</button>
+  <p id="result"></p>
 
   <script>
     let html5QrCode;
+    let scannerActive = false;
 
+    // Inicializar o scanner
     function startScanner() {
       const resultElement = document.getElementById('result');
+      const startButton = document.getElementById('start-btn');
+      const stopButton = document.getElementById('stop-btn');
 
       if (!html5QrCode) {
         html5QrCode = new Html5Qrcode("reader");
       }
 
-      html5QrCode.start(
-        { facingMode: "environment" }, // Usa a câmera traseira
-        {
-          fps: 30, // Taxa de quadros por segundo
-          qrbox: { width: 300, height: 30 }, // Faixa fina para leitura
-        },
-        (decodedText) => {
-          // Quando um código é detectado
-          resultElement.textContent = `Código detectado: ${decodedText}`;
-          html5QrCode.stop(); // Para o leitor após detectar o código
-        },
-        (error) => {
-          // Exibe erros de leitura
-          console.warn(`Erro na leitura: ${error}`);
-        }
-      ).catch((err) => {
-        console.error("Erro ao iniciar o leitor:", err);
-      });
+      // Configuração do scanner
+      html5QrCode
+        .start(
+          { facingMode: "environment" }, // Câmera traseira
+          {
+            fps: 20, // Reduzindo a taxa de quadros para otimizar desempenho
+            qrbox: { width: 300, height: 30 }, // Faixa fina para códigos de barras
+            disableFlip: true, // Evita inverter para melhorar a performance
+          },
+          (decodedText) => {
+            // Quando o código for detectado
+            resultElement.textContent = `Código detectado: ${decodedText}`;
+            stopScanner(); // Para o scanner automaticamente
+          },
+          (error) => {
+            // Mensagens de erro podem ser removidas ou tratadas
+            console.warn(`Erro na leitura: ${error}`);
+          }
+        )
+        .then(() => {
+          // Atualiza estados dos botões
+          scannerActive = true;
+          startButton.disabled = true;
+          stopButton.disabled = false;
+          resultElement.textContent = "Scanner ativo. Alinhe o código na faixa verde.";
+        })
+        .catch((err) => {
+          console.error("Erro ao iniciar o leitor:", err);
+        });
+    }
+
+    // Parar o scanner
+    function stopScanner() {
+      const startButton = document.getElementById('start-btn');
+      const stopButton = document.getElementById('stop-btn');
+      const resultElement = document.getElementById('result');
+
+      if (html5QrCode && scannerActive) {
+        html5QrCode.stop().then(() => {
+          scannerActive = false;
+          startButton.disabled = false;
+          stopButton.disabled = true;
+          resultElement.textContent = "Scanner parado.";
+        });
+      }
     }
   </script>
 </body>
